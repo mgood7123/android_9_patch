@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "AAPT2_Image.h"
+#include "image.h"
 
 #include <sstream>
 #include <string>

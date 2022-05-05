@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "AAPT2_Image.h"
+#include "image.h"
 #include "9patch.h"
 
 #ifdef GTEST_API_

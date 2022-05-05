@@ -11,7 +11,7 @@ add_library(android_9_patch SHARED
     FileMap.cpp
     map_ptr.cpp
     NinePatchBindings.cpp
-    AAPT2_NinePatch.cpp
+    NinePatch.cpp
     JenkinsHash.cpp
     Unicode.cpp
 )
