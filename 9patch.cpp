@@ -56,6 +56,8 @@ inline int isspace16(char16_t c) {
     return (c < 0x0080 && isspace(c));
 }
 
+#undef max
+
 template<typename T>
 inline static T max(T a, T b) {
     return a > b ? a : b;

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "macros.h"
 #include <errno.h>
 #include <stdint.h>
 #include <sys/types.h>

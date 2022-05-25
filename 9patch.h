@@ -101,6 +101,10 @@ struct __assertChar16Size {
  *
  * The PNG chunk type is "npTc".
  */
+
+#ifdef _MSC_VER
+__pragma( pack(push, 1) )
+#endif
 struct alignas(uintptr_t) Res_png_9patch
 {
     Res_png_9patch() : wasDeserialized(false), xDivsOffset(0),
@@ -164,7 +168,14 @@ struct alignas(uintptr_t) Res_png_9patch
         return reinterpret_cast<uint32_t*>(reinterpret_cast<uintptr_t>(this) + colorsOffset);
     }
 
-} __attribute__((packed));
+}
+#ifdef __GNUC__
+__attribute__((__packed__))
+#endif
+#ifdef _MSC_VER
+__pragma(pack(pop))
+#endif
+;
 
 /** ********************************************************************
  *  Base Types

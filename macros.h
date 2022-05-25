@@ -17,20 +17,64 @@
 #pragma once
 
 #include <stddef.h>  // for size_t
-#include <unistd.h>  // for TEMP_FAILURE_RETRY
-
 #include <utility>
 
-// bionic and glibc both have TEMP_FAILURE_RETRY, but eg Mac OS' libc doesn't.
+// define platforms and compilers
+#if defined(_MSC_VER)
+#define COMPILER_VS
+#endif
+
+#if defined(_WIN32)
+#if !defined(__ANDROID__)
+#define PLATFORM_WINDOWS
+#define ABI32
+#endif
+#endif
+
+#if defined(_WIN64)
+#if !defined(__ANDROID__)
+#define PLATFORM_WINDOWS
+#define ABI64
+#endif
+#endif
+
+#if defined(__ANDROID__)
+#define PLATFORM_ANDROID
+#if defined(__arm__)
+#define ANDROID_ARM
+#define ABI32
+#elif defined(__aarch64__)
+#define ANDROID_ARM
+#define ABI64
+#elif defined(__i386__)
+#define ABI32
+#elif defined(__x86_64__)
+#define ABI64
+#endif
+#endif
+
+#if defined(__APPLE__)
+#define PLATFORM_APPLE
+#endif
+
+
+#if defined(COMPILER_VS) && defined(PLATFORM_WINDOWS)
+// windows MSVC does not define off64_t
+typedef uint64_t off64_t;
+#endif
+
+
+// bionic and glibc both have TEMP_FAILURE_RETRY, but eg Mac OS' libc doesn't, Neither does Windows.
+#include <errno.h>
 #ifndef TEMP_FAILURE_RETRY
 #define TEMP_FAILURE_RETRY(exp)            \
-  ({                                       \
+  {                                        \
     decltype(exp) _rc;                     \
     do {                                   \
       _rc = (exp);                         \
     } while (_rc == -1 && errno == EINTR); \
     _rc;                                   \
-  })
+  }
 #endif
 
 // A macro to disallow the copy constructor and operator= functions

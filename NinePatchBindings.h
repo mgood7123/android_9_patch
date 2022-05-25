@@ -20,7 +20,10 @@
 
 #include "9patch.h"
 
+// TODO: create bindings
+
 static int8_t SkNinePatchGlue_isNinePatchChunk(int8_t * array, int32_t length);
 
 static int8_t * SkNinePatchGlue_validateNinePatchChunk(int8_t * array, int32_t length);
+
 static void SkNinePatchGlue_finalize(int8_t * patch);

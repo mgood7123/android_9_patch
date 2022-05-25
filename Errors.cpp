@@ -45,7 +45,13 @@ std::string statusToString(status_t s) {
 #undef STATUS_CASE
     }
 
-    return std::to_string(s) + " (" + strerror(-s) + ")";
+    char buf[4096];
+#if defined(PLATFORM_WINDOWS)
+    strerror_s(buf, 4096, -s);
+#else
+    strerror_r(-s, buf, 4096);
+#endif
+    return std::to_string(s) + " (" + buf + ")";
 }
 
 }  // namespace android

@@ -17,6 +17,8 @@
 #ifndef ANDROID_UNICODE_H
 #define ANDROID_UNICODE_H
 
+#include "Compat.h"
+
 #include <sys/types.h>
 #include <stdint.h>
 

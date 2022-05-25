@@ -20,21 +20,21 @@
 
 #define LOG_TAG "filemap"
 
+#include "Compat.h"
 #include "FileMap.h"
 
-#if defined(__MINGW32__) && !defined(__USE_MINGW_ANSI_STDIO)
-# define PRId32 "I32d"
-# define PRIx32 "I32x"
-# define PRId64 "I64d"
+#if defined(PLATFORM_WINDOWS) && !defined(__USE_MINGW_ANSI_STDIO)
+#define PRId32 "I32d"
+#define PRIx32 "I32x"
+#define PRId64 "I64d"
 #else
 #include <inttypes.h>
 #endif
 #include <stdio.h>
-#include <stdlib.h>
-
-#if !defined(__MINGW32__)
-#include <sys/mman.h>
+#ifdef PLATFORM_WINDOWS
+#include <io.h>
 #endif
+#include <stdlib.h>
 
 #include <string.h>
 #include <memory.h>
@@ -52,7 +52,7 @@ FileMap::FileMap(void)
       mBaseLength(0),
       mDataPtr(nullptr),
       mDataLength(0)
-#if defined(__MINGW32__)
+#if defined(PLATFORM_WINDOWS)
       ,
       mFileHandle(INVALID_HANDLE_VALUE),
       mFileMapping(NULL)
@@ -68,7 +68,7 @@ FileMap::FileMap(FileMap&& other) noexcept
       mDataOffset(other.mDataOffset),
       mDataPtr(other.mDataPtr),
       mDataLength(other.mDataLength)
-#if defined(__MINGW32__)
+#if defined(PLATFORM_WINDOWS)
       ,
       mFileHandle(other.mFileHandle),
       mFileMapping(other.mFileMapping)
@@ -77,7 +77,7 @@ FileMap::FileMap(FileMap&& other) noexcept
     other.mFileName = nullptr;
     other.mBasePtr = nullptr;
     other.mDataPtr = nullptr;
-#if defined(__MINGW32__)
+#if defined(PLATFORM_WINDOWS)
     other.mFileHandle = INVALID_HANDLE_VALUE;
     other.mFileMapping = NULL;
 #endif
@@ -94,7 +94,7 @@ FileMap& FileMap::operator=(FileMap&& other) noexcept {
     other.mFileName = nullptr;
     other.mBasePtr = nullptr;
     other.mDataPtr = nullptr;
-#if defined(__MINGW32__)
+#if defined(PLATFORM_WINDOWS)
     mFileHandle = other.mFileHandle;
     mFileMapping = other.mFileMapping;
     other.mFileHandle = INVALID_HANDLE_VALUE;
@@ -109,7 +109,7 @@ FileMap::~FileMap(void)
     if (mFileName != nullptr) {
         free(mFileName);
     }
-#if defined(__MINGW32__)
+#if defined(PLATFORM_WINDOWS)
     if (mBasePtr && UnmapViewOfFile(mBasePtr) == 0) {
         printf("UnmapViewOfFile(%p) failed, error = %lu\n", mBasePtr,
               GetLastError() );
@@ -134,7 +134,7 @@ FileMap::~FileMap(void)
 bool FileMap::create(const char* origFileName, int fd, off64_t offset, size_t length,
         bool readOnly)
 {
-#if defined(__MINGW32__)
+#if defined(PLATFORM_WINDOWS)
     int     adjust;
     off64_t adjOffset;
     size_t  adjLength;
@@ -172,7 +172,7 @@ bool FileMap::create(const char* origFileName, int fd, off64_t offset, size_t le
         mFileMapping = NULL;
         return false;
     }
-#else // !defined(__MINGW32__)
+#else // !defined(PLATFORM_WINDOWS)
     assert(fd >= 0);
     assert(offset >= 0);
     assert(length > 0);
@@ -209,9 +209,15 @@ bool FileMap::create(const char* origFileName, int fd, off64_t offset, size_t le
         }
     }
     mBasePtr = ptr;
-#endif // !defined(__MINGW32__)
+#endif // !defined(PLATFORM_WINDOWS)
 
-    mFileName = origFileName != nullptr ? strdup(origFileName) : nullptr;
+    mFileName = origFileName != nullptr ? 
+#ifdef PLATFORM_WINDOWS
+        _strdup(origFileName)
+#else
+        strdup(origFileName)
+#endif
+        : nullptr;
     mBaseLength = adjLength;
     mDataOffset = offset;
     mDataPtr = (char*) mBasePtr + adjust;
@@ -224,7 +230,7 @@ bool FileMap::create(const char* origFileName, int fd, off64_t offset, size_t le
 }
 
 // Provide guidance to the system.
-#if !defined(_WIN32)
+#if !defined(PLATFORM_WINDOWS)
 int FileMap::advise(MapAdvice advice)
 {
     int cc, sysAdvice;

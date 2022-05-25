@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "Compat.h"
+
 #include "image.h"
 
 #include <sstream>

@@ -17,9 +17,29 @@
 #ifndef __LIB_UTILS_COMPAT_H
 #define __LIB_UTILS_COMPAT_H
 
-#include <unistd.h>
+#include "macros.h"
 
-#if !defined(__MINGW32__)
+#if defined(PLATFORM_WINDOWS)
+#define NOMINMAX
+// Ensure that we always pull in winsock2.h before windows.h
+#include <winsock2.h>
+#define NOMINMAX
+#include <windows.h>
+
+// define ssize_t
+#ifdef _WIN64
+typedef int64_t ssize_t;
+#define SSIZE_MAX INT64_MAX
+#else
+typedef int32_t     ssize_t;
+#define SSIZE_MAX INT32_MAX
+#endif
+
+#else
+#include <unistd.h>
+#endif
+
+#if !defined(PLATFORM_WINDOWS)
 #include <sys/mman.h>
 #endif
 
@@ -51,7 +71,7 @@ static inline int ftruncate64(int fd, off64_t length) {
 
 #endif /* __APPLE__ */
 
-#if defined(_WIN32)
+#if defined(PLATFORM_WINDOWS)
 #define O_CLOEXEC O_NOINHERIT
 #define O_NOFOLLOW 0
 #define DEFFILEMODE 0666
@@ -84,7 +104,7 @@ static inline int ftruncate64(int fd, off64_t length) {
     })
 #endif
 
-#if defined(_WIN32)
+#if defined(PLATFORM_WINDOWS)
 #define OS_PATH_SEPARATOR '\\'
 #else
 #define OS_PATH_SEPARATOR '/'

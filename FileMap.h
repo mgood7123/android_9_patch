@@ -24,14 +24,6 @@
 
 #include "Compat.h"
 
-#if defined(__MINGW32__)
-// Ensure that we always pull in winsock2.h before windows.h
-#if defined(_WIN32)
-#include <winsock2.h>
-#endif
-#include <windows.h>
-#endif
-
 namespace android {
 
 /*
@@ -116,7 +108,7 @@ private:
     off64_t     mDataOffset;    // offset used when map was created
     void*       mDataPtr;       // start of requested data, offset from base
     size_t      mDataLength;    // length, measured from "mDataPtr"
-#if defined(__MINGW32__)
+#if defined(PLATFORM_WINDOWS)
     HANDLE      mFileHandle;    // Win32 file handle
     HANDLE      mFileMapping;   // Win32 file mapping handle
 #endif

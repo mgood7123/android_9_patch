@@ -16,7 +16,96 @@
 
 #define LOG_TAG "unicode"
 
-#include "macros.h"
+#include "Compat.h"
+
+/*
+ * Use __VA_ARGS__ if running a static analyzer,
+ * to avoid warnings of unused variables in __VA_ARGS__.
+ * Use constexpr function in C++ mode, so these macros can be used
+ * in other constexpr functions without warning.
+ */
+#ifdef __clang_analyzer__
+#ifdef __cplusplus
+extern "C++" {
+    template <typename... Ts>
+    constexpr int __fake_use_va_args(Ts...) {
+        return 0;
+    }
+}
+#else
+extern int __fake_use_va_args(int, ...);
+#endif /* __cplusplus */
+#define __FAKE_USE_VA_ARGS(...) ((void)__fake_use_va_args(0, ##__VA_ARGS__))
+#else
+#define __FAKE_USE_VA_ARGS(...) ((void)(0))
+#endif /* __clang_analyzer__ */
+
+#ifndef __predict_false
+#ifdef PLATFORM_WINDOWS
+#define __predict_false(exp) (((exp) != 0) == 0)
+#else
+#define __predict_false(exp) __builtin_expect((exp) != 0, 0)
+#endif
+#endif
+
+#ifdef PLATFORM_ANDROID
+#include <android/log.h>
+#else
+#include <stdio.h>
+#ifdef PLATFORM_WINDOWS
+#include <io.h>
+#endif
+void __android_log_assert(const char* cond, const char* tag, const char* fmt, ...) {
+    printf("%s: Assertion failed: %s", tag, cond);
+    char buf[4096];
+
+    if (fmt) {
+        va_list ap;
+        va_start(ap, fmt);
+        vsnprintf(buf, 4096, fmt, ap);
+        va_end(ap);
+    }
+    else {
+        /* Msg not provided, log condition.  N.B. Do not use cond directly as
+         * format string as it could contain spurious '%' syntax (e.g.
+         * "%d" in "blocks%devs == 0").
+         */
+        if (cond)
+            snprintf(buf, 4096, "Assertion failed: %s", cond);
+        else
+#ifdef PLATFORM_WINDOWS
+            strcpy_s(buf, 4096, "Unspecified assertion failed");
+#else
+            strcpy(buf, "Unspecified assertion failed");
+#endif
+    }
+
+
+#ifdef PLATFORM_WINDOWS
+    TEMP_FAILURE_RETRY(_write(2, buf, strlen(buf)));
+    TEMP_FAILURE_RETRY(_write(2, "\n", 1));
+#else
+    TEMP_FAILURE_RETRY(write(2, buf, strlen(buf)));
+    TEMP_FAILURE_RETRY(write(2, "\n", 1));
+#endif
+
+    abort();
+}
+#endif
+
+#define __android_second(dummy, second, ...) second
+#define __android_rest(first, ...) , ##__VA_ARGS__
+
+#define android_printAssert(cond, tag, ...)                     \
+  __android_log_assert(cond, tag,                               \
+                       __android_second(0, ##__VA_ARGS__, NULL) \
+                           __android_rest(__VA_ARGS__))
+
+#define LOG_ALWAYS_FATAL_IF(cond, ...)                                                  \
+  ((__predict_false(cond)) ? (__FAKE_USE_VA_ARGS(__VA_ARGS__),                            \
+                              ((void)android_printAssert(#cond, LOG_TAG, ##__VA_ARGS__))) \
+                           : ((void)0))
+
 #include <limits.h>
 #include "Unicode.h"
 
@@ -158,7 +247,11 @@ ssize_t utf32_to_utf8_length(const char32_t *src, size_t src_len)
             // If this happens, we would overflow the ssize_t type when
             // returning from this function, so we cannot express how
             // long this string is in an ssize_t.
+#ifdef PLATFORM_ANDROID
+            __android_log_write(ANDROID_LOG_WARN, LOG_TAG, "overflow 37723026");
+#else
             printf("overflow 37723026\n");
+#endif
             return -1;
         }
         ret += char_len;
@@ -177,18 +270,12 @@ void utf32_to_utf8(const char32_t* src, size_t src_len, char* dst, size_t dst_le
     char *cur = dst;
     while (cur_utf32 < end_utf32) {
         size_t len = utf32_codepoint_utf8_length(*cur_utf32);
-        if(!(dst_len < len)) {
-            printf("%zu < %zu\n", dst_len, len);
-            throw std::runtime_error("A Fatal Exception Has Occurred");
-        }
+        LOG_ALWAYS_FATAL_IF(dst_len < len, "%zu < %zu", dst_len, len);
         utf32_codepoint_to_utf8((uint8_t *)cur, *cur_utf32++, len);
         cur += len;
         dst_len -= len;
     }
-    if(!(dst_len < 1)) {
-        printf("dst_len < 1: %zu < 1\n", dst_len);
-        throw std::runtime_error("A Fatal Exception Has Occurred");
-    }
+    LOG_ALWAYS_FATAL_IF(dst_len < 1, "dst_len < 1: %zu < 1", dst_len);
     *cur = '\0';
 }
 
@@ -308,18 +395,12 @@ void utf16_to_utf8(const char16_t* src, size_t src_len, char* dst, size_t dst_le
             utf32 = (char32_t) *cur_utf16++;
         }
         const size_t len = utf32_codepoint_utf8_length(utf32);
-        if(!(dst_len < len)) {
-            printf("%zu < %zu\n", dst_len, len);
-            throw std::runtime_error("A Fatal Exception Has Occurred");
-        }
+        LOG_ALWAYS_FATAL_IF(dst_len < len, "%zu < %zu", dst_len, len);
         utf32_codepoint_to_utf8((uint8_t*)cur, utf32, len);
         cur += len;
         dst_len -= len;
     }
-    if (!(dst_len < 1)) {
-        printf("%zu < 1\n", dst_len);
-        throw std::runtime_error("A Fatal Exception Has Occurred");
-    }
+    LOG_ALWAYS_FATAL_IF(dst_len < 1, "dst_len < 1: %zu < 1", dst_len);
     *cur = '\0';
 }
 
@@ -349,7 +430,11 @@ ssize_t utf16_to_utf8_length(const char16_t *src, size_t src_len)
             // If this happens, we would overflow the ssize_t type when
             // returning from this function, so we cannot express how
             // long this string is in an ssize_t.
+#ifdef PLATFORM_ANDROID
+            __android_log_write(ANDROID_LOG_WARN, LOG_TAG, "overflow 37723026");
+#else
             printf("overflow 37723026\n");
+#endif
             return -1;
         }
         ret += char_len;
@@ -426,7 +511,7 @@ ssize_t utf8_to_utf16_length(const uint8_t* u8str, size_t u8len, bool overreadIs
         // 2 of them. This condition holds and we return -1, as expected.
         if (u8cur + u8charLen - 1 >= u8end) {
             if (overreadIsFatal) {
-                throw std::runtime_error("Attempt to overread computing length of utf8 string");
+                LOG_ALWAYS_FATAL_IF(true, "Attempt to overread computing length of utf8 string");
             } else {
                 return -1;
             }
@@ -449,10 +534,7 @@ ssize_t utf8_to_utf16_length(const uint8_t* u8str, size_t u8len, bool overreadIs
 
 char16_t* utf8_to_utf16(const uint8_t* u8str, size_t u8len, char16_t* u16str, size_t u16len) {
     // A value > SSIZE_MAX is probably a negative value returned as an error and casted.
-    if(!(u16len == 0 || u16len > SSIZE_MAX)) {
-        printf("u16len is %zu\n", u16len);
-        throw std::runtime_error("A Fatal Exception Has Occurred");
-    }
+    LOG_ALWAYS_FATAL_IF(u16len == 0 || u16len > SSIZE_MAX, "u16len is %zu", u16len);
     char16_t* end = utf8_to_utf16_no_null_terminator(u8str, u8len, u16str, u16len - 1);
     *end = 0;
     return end;
@@ -464,10 +546,7 @@ char16_t* utf8_to_utf16_no_null_terminator(
         return dst;
     }
     // A value > SSIZE_MAX is probably a negative value returned as an error and casted.
-    if(!(dstLen > SSIZE_MAX)) {
-        printf("dstLen is %zu\n", dstLen);
-        throw std::runtime_error("A Fatal Exception Has Occurred");
-    }
+    LOG_ALWAYS_FATAL_IF(dstLen > SSIZE_MAX, "dstLen is %zu", dstLen);
     const uint8_t* const u8end = src + srcLen;
     const uint8_t* u8cur = src;
     const char16_t* const u16end = dst + dstLen;
