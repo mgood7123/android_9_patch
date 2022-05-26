@@ -40,14 +40,6 @@ extern int __fake_use_va_args(int, ...);
 #define __FAKE_USE_VA_ARGS(...) ((void)(0))
 #endif /* __clang_analyzer__ */
 
-#ifndef __predict_false
-#ifdef PLATFORM_WINDOWS
-#define __predict_false(exp) (((exp) != 0) == 0)
-#else
-#define __predict_false(exp) __builtin_expect((exp) != 0, 0)
-#endif
-#endif
-
 #ifdef PLATFORM_ANDROID
 #include <android/log.h>
 #else
@@ -102,7 +94,7 @@ void __android_log_assert(const char* cond, const char* tag, const char* fmt, ..
                            __android_rest(__VA_ARGS__))
 
 #define LOG_ALWAYS_FATAL_IF(cond, ...)                                                  \
-  ((__predict_false(cond)) ? (__FAKE_USE_VA_ARGS(__VA_ARGS__),                            \
+  ((UNLIKELY(cond)) ? (__FAKE_USE_VA_ARGS(__VA_ARGS__),                            \
                               ((void)android_printAssert(#cond, LOG_TAG, ##__VA_ARGS__))) \
                            : ((void)0))
 
