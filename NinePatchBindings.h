@@ -35,3 +35,21 @@ CSHARP_BINDING_API int8_t SkNinePatchGlue_isNinePatchChunk(int8_t* array, int32_
 CSHARP_BINDING_API int8_t* SkNinePatchGlue_validateNinePatchChunk(int8_t* array, int32_t length);
 
 CSHARP_BINDING_API void SkNinePatchGlue_finalize(int8_t* patch);
+
+CSHARP_BINDING_API bool SkNinePatchGlue_ReadChunk(
+    // ReadChunk
+    const char* tag, const void* data, size_t length,
+    // NPatch
+    void** mPatch, size_t* mPatchSize, bool* mHasInsets,
+    int32_t** mOpticalInsets, int32_t** mOutlineInsets,
+    float* mOutlineRadius, uint8_t* mOutlineAlpha
+);
+
+CSHARP_BINDING_API void SkNinePatchGlue_getPadding(
+    void** mPatch, int32_t** outPadding
+);
+
+CSHARP_BINDING_API void SkNinePatchGlue_scale(
+    void** mPatch,
+    float scaleX, float scaleY, int scaledWidth, int scaledHeight
+);
