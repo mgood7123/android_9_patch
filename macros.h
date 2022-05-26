@@ -127,9 +127,20 @@ char(&ArraySizeHelper(T(&array)[N]))[N];  // NOLINT(readability/casting)
 #ifdef PLATFORM_WINDOWS
 #define LIKELY( exp )       (exp)
 #define UNLIKELY( exp )     (exp)
+#define CC_LIKELY( exp )       (exp)
+#define CC_UNLIKELY( exp )     (exp)
 #else
-#define LIKELY( exp )       (__builtin_expect( (exp) != 0, true  ))
-#define UNLIKELY( exp )     (__builtin_expect( (exp) != 0, false ))
+#ifdef __cplusplus
+#   define LIKELY( exp )       (__builtin_expect( (exp) != 0, true  ))
+#   define UNLIKELY( exp )     (__builtin_expect( (exp) != 0, false ))
+#   define CC_LIKELY( exp )    (__builtin_expect( !!(exp), true ))
+#   define CC_UNLIKELY( exp )  (__builtin_expect( !!(exp), false ))
+#else
+#   define LIKELY( exp )       (__builtin_expect( (exp) != 0, 1  ))
+#   define UNLIKELY( exp )     (__builtin_expect( (exp) != 0, 0 ))
+#   define CC_LIKELY( exp )    (__builtin_expect( !!(exp), 1 ))
+#   define CC_UNLIKELY( exp )  (__builtin_expect( !!(exp), 0 ))
+#endif
 #endif
 
 #define WARN_UNUSED __attribute__((warn_unused_result))
