@@ -22,8 +22,16 @@
 
 // TODO: create bindings
 
-static int8_t SkNinePatchGlue_isNinePatchChunk(int8_t * array, int32_t length);
+#if !defined(CSHARP_BINDING_API)
+#if defined(_MSC_VER)
+#define CSHARP_BINDING_API extern "C" __declspec(dllexport)
+#else
+#define CSHARP_BINDING_API extern "C" __attribute__((visibility("default")))
+#endif
+#endif
 
-static int8_t * SkNinePatchGlue_validateNinePatchChunk(int8_t * array, int32_t length);
+CSHARP_BINDING_API int8_t SkNinePatchGlue_isNinePatchChunk(int8_t* array, int32_t length);
 
-static void SkNinePatchGlue_finalize(int8_t * patch);
+CSHARP_BINDING_API int8_t* SkNinePatchGlue_validateNinePatchChunk(int8_t* array, int32_t length);
+
+CSHARP_BINDING_API void SkNinePatchGlue_finalize(int8_t* patch);

@@ -32,8 +32,7 @@ using namespace android;
  * The code below manipulates chunks as Res_png_9patch* types to draw and as
  * int8_t* to allocate and free the backing storage.
  */
-
-static int8_t SkNinePatchGlue_isNinePatchChunk(int8_t * array, int32_t length) {
+CSHARP_BINDING_API int8_t SkNinePatchGlue_isNinePatchChunk(int8_t * array, int32_t length) {
     if (nullptr == array) {
         return false;
     }
@@ -45,7 +44,7 @@ static int8_t SkNinePatchGlue_isNinePatchChunk(int8_t * array, int32_t length) {
     return (wasDeserialized != -1) ? 1 : 0;
 }
 
-static int8_t * SkNinePatchGlue_validateNinePatchChunk(int8_t * array, int32_t length) {
+CSHARP_BINDING_API int8_t * SkNinePatchGlue_validateNinePatchChunk(int8_t * array, int32_t length) {
     size_t chunkSize = length;
     if (chunkSize < (int) (sizeof(Res_png_9patch))) {
         return nullptr;
@@ -59,7 +58,7 @@ static int8_t * SkNinePatchGlue_validateNinePatchChunk(int8_t * array, int32_t l
     return reinterpret_cast<int8_t*>(Res_png_9patch::deserialize(storage));
 }
 
-static void SkNinePatchGlue_finalize(int8_t * patch) {
+CSHARP_BINDING_API void SkNinePatchGlue_finalize(int8_t * patch) {
     delete[] patch;
 }
 
