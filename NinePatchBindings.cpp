@@ -21,9 +21,6 @@
 #include "NinePatchBindings.h"
 #include <SkScalar.h>
 
-//#include "NinePatchPeeker.h"
-//#include "NinePatchUtils.h"
-
 using namespace android;
 
 /**
@@ -33,7 +30,7 @@ using namespace android;
  * The code below manipulates chunks as Res_png_9patch* types to draw and as
  * int8_t* to allocate and free the backing storage.
  */
-CSHARP_BINDING_API int8_t SkNinePatchGlue_isNinePatchChunk(int8_t * array, int32_t length) {
+CSHARP_BINDING_API bool SkNinePatchGlue_isNinePatchChunk(int8_t * array, int32_t length) {
     if (nullptr == array) {
         return false;
     }
@@ -99,50 +96,17 @@ CSHARP_BINDING_API bool SkNinePatchGlue_ReadChunk(
     return true;    // keep on decoding
 }
 
-// static jlong getTransparentRegion(JNIEnv* env, jobject, jlong bitmapPtr,
-//         jlong chunkHandle, jobject dstRect) {
-//     Res_png_9patch* chunk = reinterpret_cast<Res_png_9patch*>(chunkHandle);
-//     SkASSERT(chunk);
-//
-//     SkBitmap bitmap;
-//     bitmap::toBitmap(bitmapPtr).getSkBitmap(&bitmap);
-//     SkRect dst;
-//     GraphicsJNI::jrect_to_rect(env, dstRect, &dst);
-//
-//     SkCanvas::Lattice lattice;
-//     SkIRect src = SkIRect::MakeWH(bitmap.width(), bitmap.height());
-//     lattice.fBounds = &src;
-//     NinePatchUtils::SetLatticeDivs(&lattice, *chunk, bitmap.width(), bitmap.height());
-//     lattice.fRectTypes = nullptr;
-//     lattice.fColors = nullptr;
-//
-//     SkRegion* region = nullptr;
-//     if (SkLatticeIter::Valid(bitmap.width(), bitmap.height(), lattice)) {
-//         SkLatticeIter iter(lattice, dst);
-//         if (iter.numRectsToDraw() == chunk->numColors) {
-//             SkRect dummy;
-//             SkRect iterDst;
-//             int index = 0;
-//             while (iter.next(&dummy, &iterDst)) {
-//                 if (0 == chunk->getColors()[index++] && !iterDst.isEmpty()) {
-//                     if (!region) {
-//                         region = new SkRegion();
-//                     }
-//
-//                     region->op(iterDst.round(), SkRegion::kUnion_Op);
-//                 }
-//             }
-//         }
-//     }
-//
-//     return reinterpret_cast<jlong>(region);
-// }
-
+CSHARP_BINDING_API void SkNinePatchGlue_delete(
+    void* mPatch
+) {
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
+    free(patch);
+}
 
 CSHARP_BINDING_API void SkNinePatchGlue_getPadding(
-    void** mPatch, int32_t** outPadding
+    void* mPatch, int32_t** outPadding
 ) {
-    Res_png_9patch* patch = (Res_png_9patch*)(*mPatch);
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
     int32_t* padding = *outPadding;
     if (patch) {
         padding[0] = patch->paddingLeft;
@@ -154,6 +118,60 @@ CSHARP_BINDING_API void SkNinePatchGlue_getPadding(
         padding[1] = -1;
         padding[2] = -1;
         padding[3] = -1;
+    }
+}
+
+CSHARP_BINDING_API void SkNinePatchGlue_getNumXDivs(
+    void* mPatch, uint8_t* out
+) {
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
+    if (patch) {
+        *out = patch->numXDivs;
+    }
+}
+
+CSHARP_BINDING_API void SkNinePatchGlue_getNumYDivs(
+    void* mPatch, uint8_t* out
+) {
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
+    if (patch) {
+        *out = patch->numYDivs;
+    }
+}
+
+CSHARP_BINDING_API void SkNinePatchGlue_getNumColors(
+    void* mPatch, uint8_t* out
+) {
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
+    if (patch) {
+        *out = patch->numColors;
+    }
+}
+
+CSHARP_BINDING_API void SkNinePatchGlue_getXDivs(
+    void* mPatch, int32_t** out
+) {
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
+    if (patch) {
+        *out = patch->getXDivs();
+    }
+}
+
+CSHARP_BINDING_API void SkNinePatchGlue_getYDivs(
+    void* mPatch, int32_t** out
+) {
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
+    if (patch) {
+        *out = patch->getYDivs();
+    }
+}
+
+CSHARP_BINDING_API void SkNinePatchGlue_getColors(
+    void* mPatch, uint32_t** out
+) {
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
+    if (patch) {
+        *out = patch->getColors();
     }
 }
 
@@ -184,11 +202,11 @@ static void scaleDivRange(int32_t* divs, int count, float scale, int maxValue) {
 
 CSHARP_BINDING_API void SkNinePatchGlue_scale(
     // NPatch
-    void** mPatch,
+    void* mPatch,
     // scale
     float scaleX, float scaleY, int scaledWidth, int scaledHeight
 ) {
-    Res_png_9patch* patch = (Res_png_9patch*)(*mPatch);
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
     if (!(patch)) {
         return;
     }
@@ -206,4 +224,32 @@ CSHARP_BINDING_API void SkNinePatchGlue_scale(
         patch->paddingBottom = int(patch->paddingBottom * scaleY + 0.5f);
         scaleDivRange(patch->getYDivs(), patch->numYDivs, scaleY, scaledHeight - 1);
     }
+}
+
+CSHARP_BINDING_API size_t SkNinePatchGlue_serializedSize(
+    void* mPatch
+) {
+    Res_png_9patch* patch = (Res_png_9patch*)(mPatch);
+    if (!(patch)) {
+        return 0;
+    }
+    return patch->serializedSize();
+}
+
+CSHARP_BINDING_API void c_memcpy(
+    void* dst, void* src, size_t length
+) {
+    memcpy(dst, src, length);
+}
+
+CSHARP_BINDING_API int32_t c_memcmp(
+    void* buf1, void* buf2, size_t length
+) {
+    return (int32_t) memcmp(buf1, buf2, length);
+}
+
+CSHARP_BINDING_API void* c_memset(
+    void* buf, int value, size_t length
+) {
+    return memset(buf, value, length);
 }
